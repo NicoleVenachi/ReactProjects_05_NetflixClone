@@ -1,8 +1,15 @@
 import Input from "@/components/input"
-import Image from "next/image"
+
+import axios from "axios";
+
 import { useCallback, useState } from "react";
 
+import { getSession, signIn } from 'next-auth/react';
+import { Router, useRouter } from "next/router";
+
 const Auth = () => {
+
+  const router = useRouter(); // next, pages router hook
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -13,6 +20,36 @@ const Auth = () => {
   const toggleVariant = useCallback(() => {
     setVariant((currentVariant) => currentVariant === 'login' ? 'register' : 'login');
   }, []);
+
+  const login = useCallback(async () => {
+    try {
+      await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: '/' // a donde me redirecciona
+      });
+
+      router.push('/'); // me manda a path root
+    } catch (error) {
+      console.log(error);
+    }
+  }, [email, password, router]); // funcion para hacer login, hago dependency array para el callback
+
+  const register = useCallback(async () => {
+    try {
+      await axios.post('/api/auth/register', {
+        // el men no necesitaba coloar el /api, yo si, no se porque
+        email,
+        name,
+        password
+      }); // registro
+
+      login(); //luego de register, hago login
+    } catch (error) {
+      console.log(error); //error en register
+    }
+  }, [email, name, password, login]); //funcion para hacer register, hago dependency array para el callback
 
   return (
     <div className="relative h-full w-full bg-[url('/images/hero.jpg')] bg-no-repeat bg-center bg-fixed bg-cover">
@@ -57,9 +94,11 @@ const Auth = () => {
               />
             </div>
 
-            <button className="bg-red-600 py-3 text-white rounded-md w-full mt-10 hover:bg-red-700 transition">
+            <button onClick={variant === 'login' ? login : register} className="bg-red-600 py-3 text-white rounded-md w-full mt-10 hover:bg-red-700 transition">
               {variant === 'login' ? 'Login' : 'Sign up'}
             </button>
+            {/* texto cambia segun el toggle, al igual el la función que llamo en el onclick */}
+
             <p className="text-neutral-500 mt-12">
               {variant === 'login' ? 'First time using Netflix?' : 'Already have an account?'}
 
